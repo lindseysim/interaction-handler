@@ -238,7 +238,13 @@ InteractionHandler.prototype.startInteraction = function(type, evt) {
         }
     }
     if(this._onInteractionStart) {
-        var stop = this._onInteractionStart(evt, type);
+        var stop;
+        try {
+            stop = this._onInteractionStart(evt, type);
+        } catch(e) {
+            console.error(e);
+            return;
+        }
         if(stop === false) {
             if(!restartInteraction) this.interrupt(evt);
             return;
@@ -246,12 +252,18 @@ InteractionHandler.prototype.startInteraction = function(type, evt) {
     }
     if(type in this._interactions) {
         this._activeInteraction = type;
-        if(
-            !restartInteraction ||
-            !this._interactions[this._activeInteraction].restart ||
-            this._interactions[this._activeInteraction].restart(evt) !== false
-        ) {
-            this._interactions[this._activeInteraction].start(evt);
+        try {
+            if(
+                !restartInteraction ||
+                !this._interactions[this._activeInteraction].restart ||
+                this._interactions[this._activeInteraction].restart(evt) !== false
+            ) {
+                this._interactions[this._activeInteraction].start(evt);
+            }
+        } catch(e) {
+            console.error(e);
+            this._activeInteraction = null;
+            return;
         }
         if(!restartInteraction && this._interactions[this._activeInteraction].olInteraction) {
             this.olMap.addInteraction(this._interactions[this._activeInteraction].olInteraction);
@@ -273,28 +285,49 @@ InteractionHandler.prototype.endInteraction = function(evt, cancel, suppressClea
     if(!this._activeInteraction) return;
     var error = null, 
         endObj = null;
+    // end interaciton callback
     try {
         endObj = this._interactions[this._activeInteraction].end(evt, cancel);
     } catch(e) {
         error = e.message;
         console.error(e);
     }
+    // remove ol interactions
+    try {
+        if(this._interactions[this._activeInteraction].olInteraction) {
+            this.olMap.removeInteraction(this._interactions[this._activeInteraction].olInteraction);
+        }
+    } catch(e) {
+        error = e.message;
+        console.error(e);
+    }
     // clear UI (must come before clearing active interaction)
-    if(!suppressClear) this.clearInteraction();
-    // remove ol interaction
-    if(this._interactions[this._activeInteraction].olInteraction) {
-        this.olMap.removeInteraction(this._interactions[this._activeInteraction].olInteraction);
+    try {
+        if(!suppressClear) this.clearInteraction();
+    } catch(e) {
+        error = e.message;
+        console.error(e);
     }
     // end interaction callback
-    if(this._onInteractionEnd) this._onInteractionEnd(evt, this._activeInteraction, cancel);
+    try {
+        if(this._onInteractionEnd) this._onInteractionEnd(evt, this._activeInteraction, cancel);
+    } catch(e) {
+        error = e.message;
+        console.error(e);
+    }
     // clear active
     var endedInteractionName = this._activeInteraction;
     this._activeInteraction = null;
     // in case an event needed to prevent map interaction
     this._blockMapInteraction = false;
     // update info
-    if(!suppressUpdate && this._onUpdate) {
-        this._onUpdate(endedInteractionName, endObj, error);
+    try {
+        if(!suppressUpdate && this._onUpdate) {
+            this._onUpdate(endedInteractionName, endObj, error);
+        }
+    } catch(e) {
+        error = e.message;
+        console.error(e);
     }
     // return error
     return error;
@@ -334,13 +367,17 @@ InteractionHandler.prototype.interrupt = function(evt, onInterrupt, onCancel) {
     if(this._activeInteraction && this._interactions[this._activeInteraction].checkInterrupt) {
         var self = this, 
             saveOnInterrupt = this._interactions[this._activeInteraction].saveOnInterrupt;
-        this._interactions[this._activeInteraction].checkInterrupt(
-            function() {
-                self.endInteraction(evt, saveOnInterrupt);
-                if(onInterrupt) onInterrupt();
-            }, 
-            (onCancel || function() {})
-        );
+        try {
+            this._interactions[this._activeInteraction].checkInterrupt(
+                function() {
+                    self.endInteraction(evt, saveOnInterrupt);
+                    if(onInterrupt) onInterrupt();
+                }, 
+                (onCancel || function() {})
+            );
+        } catch(e) {
+            console.error(e);
+        }
     } else {
         this.endInteraction(evt);
         if(onInterrupt) onInterrupt();
@@ -367,9 +404,7 @@ InteractionHandler.prototype._cancelStartInteraction = function(type) {
  * @param {string} type - The event name to attach map listener to.
  */
 InteractionHandler.prototype.addMapListener = function(type) {
-    if(type in this._mapInteractions) {
-        this.olMap.un(type, this._mapInteractions[type]);
-    }
+    this.removeMapListener(type);
     var self = this;
     this._mapInteractions[type] = function(evt) {
         if(self._blockMapInteraction || !self._activeInteraction) return;
