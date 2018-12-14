@@ -11,7 +11,7 @@
 
 In a highly interactive application, there soon becomes many interaction types defined. Some of these interactions are instantaneous (e.g. a simple button press), but some of which are persistent until an action ends it (e.g. drawing or editing something). Interactions can have complex processes on starting/ending (such as saving the edits). This is complicated by the fact that the user may try to start another interaction while one is currently ongoing. The current interaction must be ended, but is it ended gracefully or interrupted? Does it first have a prompt asking the user if they're sure to cancel said interaction?
 
-### The philosophy ###
+### The idea ###
 
 "Interaction" itself becomes a state, which **Interaction Handler** manages. Aside from ability to handle listeners on an OpenLayers map instance (optional), it does not actually process the interactions themselves. It only manages them. However all interactions must be started and ended through the handler.
 
@@ -22,6 +22,8 @@ At the simplest, an interaction starts and eventually ends. The interaction may 
 Only one interaction may be active at one time. When another interaction attempts to start while an interaction is currently active, it sends an interrupt request. The currently active interaction then begins the interrupt process by canceling the interaction.
 
 There are more complicated routes as we get into ending versus canceling, restarting interactions, interruption confirmation, and cancel starts. These will be covered in more depth in the later sections.
+
+![](images/lifecycle.png)
 
 ----------
 
@@ -44,6 +46,9 @@ Interactions are defined primarily through callbacks. Thus. For greater detail s
     </tr>
     <tr>
       <td>interaction.end</td><td>Callback on ending this interaction. Provided <code>event</code>, and <code>cancel</code> parameters.</td>
+    </tr>
+    <tr>
+      <td>interaction.restart</td><td><i>Optional.</i> Callback if restarting this interaction (that is, interaction start was called when it was already active). Provided <code>evt</code> parameter. If calling start twice without the end callback may cause issues, return <code>false</code> to skip retriggering <code>interaction.start</code> (while still keeping this interaction active).</td>
     </tr>
     <tr>
       <td>interaction.cancelStart</td><td><i>Optional.</i> Callback if attempt to start this interaction was canceled as the interruption of the currently active interaction was blocked. Provided <code>type</code> parameter.</td>
