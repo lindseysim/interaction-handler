@@ -1,0 +1,24 @@
+{
+  "name": "js-interaction-handler",
+  "version": "0.0.9",
+  "author": "Lawrence Sim",
+  "license": "MIT",
+  "main": "src/interaction-handler.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://siml@bitbucket.org/siml/js-interaction-handler.git"
+  },
+  "homepage": "https://bitbucket.org/siml/js-interaction-handler",
+  "scripts": {
+    "build": "webpack --config webpack.config.js", 
+    "jsdoc": "node jsdoc"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.2.0",
+    "@babel/preset-env": "^7.2.0",
+    "babel-loader": "^8.0.4",
+    "jsdoc-to-markdown": "^4.0.1",
+    "webpack": "^4.27.1",
+    "webpack-cli": "^3.1.2"
+  }
+}
