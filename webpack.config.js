@@ -4,7 +4,9 @@ module.exports = {
     entry: './interaction-handler.js', 
     mode: 'production', 
     output: {
-        path: path.resolve(__dirname),
+        library: 'InteractionHandler', 
+        libraryTarget: 'this', 
+        path: path.resolve(__dirname), 
         filename: 'interaction-handler.min.js'
     },
     module: {
