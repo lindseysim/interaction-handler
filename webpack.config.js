@@ -6,6 +6,7 @@ module.exports = {
     output: {
         library: 'InteractionHandler', 
         libraryTarget: 'this', 
+        libraryExport: 'default', 
         path: path.resolve(__dirname), 
         filename: 'interaction-handler.min.js'
     },

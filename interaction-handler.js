@@ -545,4 +545,4 @@ InteractionHandler.prototype._uiInterruptorListener = function(elem, onInterrupt
     );
 };
 
-module.exports = InteractionHandler;
+export {InteractionHandler as default};
