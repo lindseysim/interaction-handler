@@ -82,6 +82,7 @@ In this example, we're adding OpenLayers map-measure interactions, which handle 
 
 First create the interactions in the handlers. Because the interactions are quite similar, we will share the same routes. However, the interactions themselves are unique, so added separately with different names.
 
+```javascript
     var olInteraction = null, 
         iOptions = {
             start: startMeasure, 
@@ -127,15 +128,19 @@ First create the interactions in the handlers. Because the interactions are quit
             }
         }
     }
+```
 
 Now the UI elements..
 
+```html
     <button class="ui-measure" geom="line">Measure Distance</button>
     <button class="ui-measure" geom="poly">Measure Area</button>
     <button class="ui-measure-cancel">Cancel</button>
+```
 
 ..are bound to `click` events. The name of the interaction they start are given by the `valueFunction` option. The cancel button, meanwhile, is set to only interrupt any active events, without starting any interaction of its own.
 
+```javascript
     interactionHandler.bindUiElements(
         document.querySelectorAll(".ui-measure"), 
         {
@@ -149,6 +154,7 @@ Now the UI elements..
         document.querySelector(".ui-measure-cancel"), 
         {interruptOnly: true}
     );
+```
 
 Note you do not necessarily have to use `bindUiElements()`, and you can manually bind events as you like to `startInteraction()` and `endInteraction()`.
 
@@ -158,6 +164,7 @@ If clicking, say, the measure line button to activate it, then clicking it again
 
 To counter this, you may add code to enable and disable the buttons. But we may also want to add a programmatic check. In the simplest case, we can add a restart callback that returns false, thus halting retriggering the start interaction callback while still keeping the interaction active.
 
+```javascript
     var iOptions = {
             start: startMeasure, 
             end: endMeasure, 
@@ -165,9 +172,11 @@ To counter this, you may add code to enable and disable the buttons. But we may 
             checkInterrupt: confirmInterrupt, 
             saveOnInterrupt: false
         };
+```
 
 Alternatively, you may want it such that clicking on the button when it's already active actually interrupts it. Assuming you already placed code to swap the button labels on click so their behavior is evident:
 
+```javascript
     interactionHandler.onInteractionStart(function(evt, type) {
         // note startsWith() requires polyfill in IE
         if(type.startsWith("measure") && this.activeInteraction === type) {
@@ -175,6 +184,7 @@ Alternatively, you may want it such that clicking on the button when it's alread
             return false;
         }
     });
+```
 
 ##### Prompt to confirm interruption #####
 
@@ -182,6 +192,7 @@ As written above, interrupting/canceling the measure interaction will simply end
 
 If so, in the interaction options, we can adjust the interaction options like so, linking in to a confirm interruption function.
 
+```javascript
     var iOptions = {
             start: startMeasure, 
             end: endMeasure, 
@@ -209,6 +220,7 @@ If so, in the interaction options, we can adjust the interaction options like so
         });
         modal.style.display = "block";
     }
+```
 
 ----------
 
