@@ -83,107 +83,107 @@ In this example, we're adding OpenLayers map-measure interactions, which handle 
 First create the interactions in the handlers. Because the interactions are quite similar, we will share the same routes. However, the interactions themselves are unique, so added separately with different names.
 
 ```javascript
-    var olInteraction = null, 
-        iOptions = {
-            start: startMeasure, 
-            end: endMeasure, 
-            saveOnInterrupt: false
-        };
-    interactionHandler.addInteraction("measure-line", iOptions);
-    interactionHandler.addInteraction("measure-poly", iOptions);
+var olInteraction = null, 
+    iOptions = {
+        start: startMeasure, 
+        end: endMeasure, 
+        saveOnInterrupt: false
+    };
+interactionHandler.addInteraction("measure-line", iOptions);
+interactionHandler.addInteraction("measure-poly", iOptions);
 
-    function startMeasure(evt) {
-        var geomType = evt ? evt.currentTarget.getAttribute("geom") : null;
-        if(geomType === "line") {
-            geomType = "LineString";
-        } else if(geomType === "poly") {
-            geomType = "Polygon";
+function startMeasure(evt) {
+    var geomType = evt ? evt.currentTarget.getAttribute("geom") : null;
+    if(geomType === "line") {
+        geomType = "LineString";
+    } else if(geomType === "poly") {
+        geomType = "Polygon";
+    } else {
+        // if no recognized geometry type, end interaction
+        return interactionHandler.endInteraction(null, true);
+    }
+    olInteraction = new ol.interaction.Draw({
+        source: measureLayerSource, 
+        type: geomType, 
+        style: this.measureStyle
+    });
+    // on draw end of the OpenLayers interaction, end the interaction
+    olInteraction.on("drawend", function(evt) {
+        interactionHandler.endInteraction(evt, false);
+    });
+    olMap.addInteraction(olInteraction);
+}
+
+function endMeasure(evt, cancel) {
+    if(olInteraction) {
+        olMap.removeInteraction(olInteraction);
+        olInteraction = null;
+    }
+    if(!cancel && evt && evt.feature) {
+        var geom = evt.feature.getGeometry();
+        if(geom.getType() === "LineString") {
+            alert(ol.sphere.getLength(geom));
         } else {
-            // if no recognized geometry type, end interaction
-            return interactionHandler.endInteraction(null, true);
-        }
-        olInteraction = new ol.interaction.Draw({
-            source: measureLayerSource, 
-            type: geomType, 
-            style: this.measureStyle
-        });
-        // on draw end of the OpenLayers interaction, end the interaction
-        olInteraction.on("drawend", function(evt) {
-            interactionHandler.endInteraction(evt, false);
-        });
-        olMap.addInteraction(olInteraction);
-    }
-
-    function endMeasure(evt, cancel) {
-        if(olInteraction) {
-            olMap.removeInteraction(olInteraction);
-            olInteraction = null;
-        }
-        if(!cancel && evt && evt.feature) {
-            var geom = evt.feature.getGeometry();
-            if(geom.getType() === "LineString") {
-                alert(ol.sphere.getLength(geom));
-            } else {
-                alert(ol.sphere.getArea(geom));
-            }
+            alert(ol.sphere.getArea(geom));
         }
     }
+}
 ```
 
 Now the UI elements..
 
 ```html
-    <button class="ui-measure" geom="line">Measure Distance</button>
-    <button class="ui-measure" geom="poly">Measure Area</button>
-    <button class="ui-measure-cancel">Cancel</button>
+<button class="ui-measure" geom="line">Measure Distance</button>
+<button class="ui-measure" geom="poly">Measure Area</button>
+<button class="ui-measure-cancel">Cancel</button>
 ```
 
-..are bound to `click` events. The name of the interaction they start are given by the `valueFunction` option. The cancel button, meanwhile, is set to only interrupt any active events, without starting any interaction of its own.
+..are bound to `click` events. The name of the interaction they start are given by the `value` option. The cancel button, meanwhile, is set to only interrupt any active events, without starting any interaction of its own.
 
 ```javascript
-    interactionHandler.bindUiElements(
-        document.querySelectorAll(".ui-measure"), 
-        {
-            event: 'click', 
-            valueFunction: function() {
-                return "measure-"+this.getAttribute("geom");
-            }
+interactionHandler.bindUiElements(
+    document.querySelectorAll(".ui-measure"), 
+    {
+        event: 'click', 
+        value: function() {
+            return "measure-"+this.getAttribute("geom");
         }
-    );
-    interactionHandler.bindUiElements(
-        document.querySelector(".ui-measure-cancel"), 
-        {interruptOnly: true}
-    );
+    }
+);
+interactionHandler.bindUiElements(
+    document.querySelector(".ui-measure-cancel"), 
+    {interruptOnly: true}
+);
 ```
 
-Note you do not necessarily have to use `bindUiElements()`, and you can manually bind events as you like to `startInteraction()` and `endInteraction()`.
+Note you do not necessarily have to use `bindUiElements()`, you can manually bind events as you like to `startInteraction()` and `endInteraction()`.
 
 ##### Restarting interactions and canceling on reclick #####
 
-If clicking, say, the measure line button to activate it, then clicking it again, we actually just restart the interaction. This actually causes `startMeasure` to be called twice, without calling `endMeasure`, which is erroneous and will double up adding `ol.interaction.Draw` to the map.
+If clicking, say, the measure line button to activate it, then clicking it again, we actually restarted the interaction. This actually causes `startMeasure` to be called twice, without calling `endMeasure`, which is erroneous and will double up adding `ol.interaction.Draw` to the map.
 
 To counter this, you may add code to enable and disable the buttons. But we may also want to add a programmatic check. In the simplest case, we can add a restart callback that returns false, thus halting retriggering the start interaction callback while still keeping the interaction active.
 
 ```javascript
-    var iOptions = {
-            start: startMeasure, 
-            end: endMeasure, 
-            restart: function() { return false; }, 
-            checkInterrupt: confirmInterrupt, 
-            saveOnInterrupt: false
-        };
+var iOptions = {
+        start: startMeasure, 
+        end: endMeasure, 
+        restart: function() { return false; }, 
+        checkInterrupt: confirmInterrupt, 
+        saveOnInterrupt: false
+    };
 ```
 
-Alternatively, you may want it such that clicking on the button when it's already active actually interrupts it. Assuming you already placed code to swap the button labels on click so their behavior is evident:
+Alternatively, you may want it such that clicking on the button when it's already active actually ends it (via interruption).
 
 ```javascript
-    interactionHandler.onInteractionStart(function(evt, type) {
-        // note startsWith() requires polyfill in IE
-        if(type.startsWith("measure") && this.activeInteraction === type) {
-            this.interrupt();
-            return false;
-        }
-    });
+interactionHandler.onInteractionStart(function(evt, type) {
+    // note startsWith() requires polyfill in IE
+    if(type.startsWith("measure") && this.activeInteraction === type) {
+        this.interrupt();
+        return false;
+    }
+});
 ```
 
 ##### Prompt to confirm interruption #####
@@ -193,33 +193,33 @@ As written above, interrupting/canceling the measure interaction will simply end
 If so, in the interaction options, we can adjust the interaction options like so, linking in to a confirm interruption function.
 
 ```javascript
-    var iOptions = {
-            start: startMeasure, 
-            end: endMeasure, 
-            restart: function() { return false; }, 
-            checkInterrupt: confirmInterrupt, 
-            saveOnInterrupt: false
-        };
-    
-    function confirmInterrupt(interrupt, cancel) {
-        var modal = document.querySelector("#modal");
-        modal.innerHTML = (
-            "<p>Cancel measurement?</p>" + 
-            "<button id='modal-cancel'>No, continue measuring</button>" + 
-            "<button id='modal-confirm'>Yes, stop measuring</button>"
-        );
-        modal.querySelector("#modal-confirm").addEventListener('click', function() {
-            interrupt();
-            modal.innerHTML = "";
-            modal.style.display = "none";
-        });
-        modal.querySelector("#modal-cancel").addEventListener('click', function() {
-            cancel();
-            modal.innerHTML = "";
-            modal.style.display = "none";
-        });
-        modal.style.display = "block";
-    }
+var iOptions = {
+        start: startMeasure, 
+        end: endMeasure, 
+        restart: function() { return false; }, 
+        checkInterrupt: confirmInterrupt, 
+        saveOnInterrupt: false
+    };
+
+function confirmInterrupt(interrupt, cancel) {
+    var modal = document.querySelector("#modal");
+    modal.innerHTML = (
+        "<p>Cancel measurement?</p>" + 
+        "<button id='modal-cancel'>No, continue measuring</button>" + 
+        "<button id='modal-confirm'>Yes, stop measuring</button>"
+    );
+    modal.querySelector("#modal-confirm").addEventListener('click', function() {
+        interrupt();
+        modal.innerHTML = "";
+        modal.style.display = "none";
+    });
+    modal.querySelector("#modal-cancel").addEventListener('click', function() {
+        cancel();
+        modal.innerHTML = "";
+        modal.style.display = "none";
+    });
+    modal.style.display = "block";
+}
 ```
 
 ----------
@@ -228,7 +228,7 @@ If so, in the interaction options, we can adjust the interaction options like so
 
 ##### End interaction vs. interrupt #####
 
-Ending an interaction simply ends the interaction. Interrupting the interaction attempts to end the interaction, but may be rejected, depending on whether a `checkInterrupt` callback exists for the interaction is therein canceled. However, if confirmed, interrupt will eventually route to `endInteraction()`. Additionally, the default state of an `endInteraction()` call is that it is not a 'cancel' event. An interaction ended through `interrupt()` sets the `cancel` parameter to `true`.
+Ending an interaction simply ends the interaction. Interrupting the interaction attempts to end the interaction, but may be rejected, depending on whether a `checkInterrupt` callback exists for the interaction and is therein canceled. However, if confirmed, interrupt will eventually route to `endInteraction()`. Additionally, the default state of an `endInteraction()` call is that it is not a 'cancel' event. An interaction ended through `interrupt()` sets the `cancel` parameter to `true`.
 
 ##### Default listeners #####
 

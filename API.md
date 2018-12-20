@@ -1,70 +1,42 @@
-## Callback Definitions
-
-<dl>
-<dt><a href="#interactionStart">interactionStart</a> : <code>function</code></dt>
-<dd><p>Callback on starting interaction. Always called when the interaction is started.</p>
-</dd>
-<dt><a href="#interactionEnd">interactionEnd</a> ⇒ <code>Object</code></dt>
-<dd><p>Callback on ending interaction. Endings may be divided as ending normally or cancelled using the <code>cancel</code> parameter. Interruptions are passed as an ending interaction event with cancel parameter as true.</p>
-</dd>
-<dt><a href="#interactionRestart">interactionRestart</a> ⇒ <code>boolean</code></dt>
-<dd><p>Callback on restarting interaction. Called when the interaction is started but was already the active interaction.</p>
-</dd>
-<dt><a href="#interactionCancelStart">interactionCancelStart</a> : <code>function</code></dt>
-<dd><p>If attempting to start this interaction, but could not interrupt the currently active interaction (as it has a confirm interrupt function that was not confirmed), use this callback to undo changes that have already happened. E.g. UI changes that were triggered on the click before the start interaction process was triggered.</p>
-</dd>
-<dt><a href="#interactionClear">interactionClear</a> : <code>function</code></dt>
-<dd><p>Callback triggered on end interaction but separated as depending on case they made be called independently 
-(via <a href="#InteractionHandler+clearInteraction">clearInteraction</a>()) or not called during end as needed.</p>
-</dd>
-<dt><a href="#interactionInterrupt">interactionInterrupt</a> : <code>function</code></dt>
-<dd><p>Callback triggered when this interaction is interrupted. Determines whether to confirm interruption, using pass callback to continue interruption callback (which may be ignored if canceling interruption).</p>
-</dd>
-<dt><a href="#interactionMap">interactionMap</a> : <code>function</code></dt>
-<dd><p>Callback triggered on map interaction.</p>
-</dd>
-<dt><a href="#onInteractionStart">onInteractionStart</a> ⇒ <code>boolean</code></dt>
-<dd><p>Callback on starting any interaction.</p>
-</dd>
-<dt><a href="#onInteractionEnd">onInteractionEnd</a> : <code>function</code></dt>
-<dd><p>Callback after ending any interaction.</p>
-</dd>
-<dt><a href="#onInteractionClear.">onInteractionClear.</a> : <code>function</code></dt>
-<dd><p>Callback on clearing any interaction.</p>
-</dd>
-<dt><a href="#onInteractionUpdate.">onInteractionUpdate.</a> : <code>function</code></dt>
-<dd><p>Callback after finishing end interaction to trigger any following updates as needed. As such, passed parameters that may be returned by the interaction end callback (<a href="interactionEndInteractionHandler#">interactionEndInteractionHandler#</a>).</p>
-</dd>
-<dt><a href="#uiValueFunction">uiValueFunction</a> ⇒ <code>string</code></dt>
-<dd><p>Callback for returning a value denoting the interaction type bound to this UI element. Called within context such that <code>this</code> is the element on which the event was triggered.</p>
-</dd>
-</dl>
-
 <a name="InteractionHandler"></a>
 
 ## InteractionHandler
-A class for grouping map interactions, particularly those with on/off state such as edit-mode, 
-as opposed to instantaneous ineractions, like a click-query. Does not create any interactions on its own but by grouping interactions, allows a better-organized handling of interruptions and coordination of interaction events.
+A class for grouping map interactions, particularly those with on/off state such as edit-mode, as opposed to instantaneous ineractions, like a click-query. Does not create any interactions on its own but by grouping interactions, allows a better-organized handling of interruptions and coordination of interaction events.
+
+Interactions are started via [startInteraction](#InteractionHandler+startInteraction)() and ended via [endInteraction](#InteractionHandler+endInteraction)(). They may also be interrupted via [interrupt](#InteractionHandler+interrupt)().
 
 * [InteractionHandler](#InteractionHandler)
     * [new InteractionHandler(olMap)](#new_InteractionHandler_new)
-    * [.addInteraction(name, interaction)](#InteractionHandler+addInteraction) ⇒ <code>Object</code>
+    * [.addInteraction(name, interaction)](#InteractionHandler+addInteraction)
     * [.removeInteraction(name)](#InteractionHandler+removeInteraction)
-    * [.onInteractionStart(callback)](#InteractionHandler+onInteractionStart) ⇒ <code>boolean</code>
+    * [.onInteractionStart(callback)](#InteractionHandler+onInteractionStart)
     * [.onInteractionEnd(callback)](#InteractionHandler+onInteractionEnd)
     * [.onClear(callback)](#InteractionHandler+onClear)
     * [.onUpdate(callback)](#InteractionHandler+onUpdate)
     * [.startInteraction(type, [evt])](#InteractionHandler+startInteraction)
-    * [.endInteraction([evt], [cancel], [suppressClear], [suppressUpdate])](#InteractionHandler+endInteraction) ⇒ <code>string</code>
+    * [.endInteraction([evt], [cancel], [suppressClear], [suppressUpdate])](#InteractionHandler+endInteraction)
     * [.clearInteraction()](#InteractionHandler+clearInteraction)
     * [.interrupt(evt, [onInterrupt], [onCancel])](#InteractionHandler+interrupt)
-    * [._cancelStartInteraction(type)](#InteractionHandler+_cancelStartInteraction)
     * [.addMapListener(type)](#InteractionHandler+addMapListener)
     * [.removeMapListener(type)](#InteractionHandler+removeMapListener)
     * [.removeAllMapListeners()](#InteractionHandler+removeAllMapListeners)
     * [.disableMapInteractions()](#InteractionHandler+disableMapInteractions)
     * [.enableMapInteractions()](#InteractionHandler+enableMapInteractions)
     * [.bindUiElements(elems, options)](#InteractionHandler+bindUiElements)
+    
+* [Callback Definitions](#Callback-Definitions)
+    * [interactionStart](#interactionStart)
+    * [interactionEnd](#interactionEnd)
+    * [interactionRestart](#interactionRestart)
+    * [interactionCancelStart](#interactionCancelStart)
+    * [interactionClear](#interactionClear)
+    * [interactionInterrupt](#interactionInterrupt)
+    * [interactionMap](#interactionMap)
+    * [onInteractionStart](#onInteractionStart)
+    * [onInteractionEnd](#onInteractionEnd)
+    * [onInteractionClear](#onInteractionClear)
+    * [onInteractionUpdate](#onInteractionUpdate)
+    * [UIValueFunction](#UIValueFunction)
 
 <a name="new_InteractionHandler_new"></a>
 
@@ -91,12 +63,12 @@ Add an interaction.
 | interaction.start | [<code>interactionStart</code>](#interactionStart) | Callback on starting interaction. |
 | interaction.end | [<code>interactionEnd</code>](#interactionEnd) | Callback on ending the interaction. |
 | [interaction.restart] | [<code>interactionRestart</code>](#interactionRestart) | Optional clear function. |
-| [interaction.cancelStart] | [<code>interactionCancelStart</code>](#interactionCancelStart) | Optional callback if canceling start         interaction. |
+| [interaction.cancelStart] | [<code>interactionCancelStart</code>](#interactionCancelStart) | Optional callback if canceling start interaction. |
 | [interaction.clear] | [<code>interactionClear</code>](#interactionClear) | Optional clear function. |
 | [interaction.checkInterrupt] | [<code>interactionInterrupt</code>](#interactionInterrupt) | Optional interrupt checking function. |
-| [interaction.map] | <code>Object</code> | Optional map of listener functions with key being the event name and         value being value being callback ([InteractionHandler#interactionMap](InteractionHandler#interactionMap)) on that event. Listener        must first be enabled via [addMapListener](#InteractionHandler+addMapListener)(). |
-| {ol.Interaction |  | [interaction.olInteraction] - Optional OpenLayers map interaction to bind with this        interaction. |
-| [interaction.saveOnInterrupt] | <code>boolean</code> | Special case, if true, to save changes even if         interrupted. That is, treat any interruption as a normal end interaction. |
+| [interaction.map] | <code>Object</code> | Optional map of listener functions with key being the event name and value being value being callback on that event. Listener must first be enabled via [addMapListener](#InteractionHandler+addMapListener)(). |
+| {ol.Interaction |  | [interaction.olInteraction] - Optional OpenLayers map interaction to bind with this interaction. |
+| [interaction.saveOnInterrupt] | <code>boolean</code> | Special case, if true, to save changes even if interrupted. That is, treat any interruption as a normal end interaction. |
 
 <a name="InteractionHandler+removeInteraction"></a>
 
@@ -141,18 +113,19 @@ Set a callback to be called after any interaction is cleared (see clearInteracti
 
 | Param | Type |
 | --- | --- |
-| callback | <code>onInteractionClear</code> | 
+| callback | [<code>onInteractionClear</code>](#onInteractionClear) | 
 
 <a name="InteractionHandler+onUpdate"></a>
 
 ### interactionHandler.onUpdate(callback)
-Set a callback to be called after any interaction finished. See [InteractionHandler#onInteractionUpdate](InteractionHandler#onInteractionUpdate) callback, but useful for passing information gathered on ending interaction (optionally through [InteractionHandler#interactionEnd](InteractionHandler#interactionEnd) callback), to some trigger to update the rest of the application based on this information.
+Set a callback to be called after any interaction finished. See [#onInteractionUpdate](#onInteractionUpdate) callback, but useful for passing information gathered on ending interaction (optionally through [#interactionEnd](#interactionEnd) callback), to some trigger
+to update the rest of the application based on this information.
 
 **Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
 
 | Param | Type |
 | --- | --- |
-| callback | <code>onInteractionUpdate</code> | 
+| callback | [<code>onInteractionUpdate</code>](#onInteractionUpdate) | 
 
 <a name="InteractionHandler+startInteraction"></a>
 
@@ -178,17 +151,13 @@ End interaction. Ends interaction, calling specific function necessary to valida
 | --- | --- | --- |
 | [evt] | <code>Event</code> | The event object. |
 | [cancel] | <code>boolean</code> | If true, specifies so changes are discarded, not saved. |
-| [suppressClear] | <code>boolean</code> | If true, suppresses clearInteraction() call after finishing. |
-| [suppressUpdate] | <code>boolean</code> | If true, suppresses updateInto() call after finishing. |
+| [suppressClear] | <code>boolean</code> | If true, suppresses [`clearInteraction()`](interactionHandler+clearInteraction) call after finishing. |
+| [suppressUpdate] | <code>boolean</code> | If true, suppresses [`updateInfo()`](interactionHandler+updateInfo) call after finishing. |
 
 <a name="InteractionHandler+clearInteraction"></a>
 
 ### interactionHandler.clearInteraction()
-Clear active interaction. Here it does not do anything specific unless 'clear' callback is set in the definition of the active interaction or a general on-clear listener is set. This is called after the interaction finish triggered but before the general interaction end listener (if set) is called.
-
-Generally you don't call this directly, you call endInteraction() which also calls this function but left public for special cases. It may also not be called despite finishing interaction if "suppressClear" parameter is true.
-
-Examples of use are setting UI/elem reset stuff here. Thus you can call it separately if required.
+Clear active interaction. Here it does not do anything specific unless 'clear' callback is set in the definition of the active interaction or a general on-clear listener is set. This is called after the interaction finish triggered but before the general interaction end listener (if set) is called. Generally you don't call this directly, you call endInteraction() which also calls this function but left public for special cases. It may also not be called despite finishing interaction if `suppressClear` parameter is true. Examples of use are setting UI/elem reset stuff here. Thus you can call it separately if required.
 
 **Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
 <a name="InteractionHandler+interrupt"></a>
@@ -201,21 +170,10 @@ Interrupt (that is, finish without saving) any active UDA interactions that are 
 | Param | Type | Description |
 | --- | --- | --- |
 | evt | <code>Event</code> | The event object. |
-| [onInterrupt] | <code>Callback</code> | Optional callback to run after successful interrupt. Generally good         practice to have continuing code encapsulated in this callback as interactions with a check         interrupt callback can only continue through this. |
-| [onCancel] | <code>Callback</code> | Optional, for internal use only. To pass cancel function if attempting to         start an interaction but canceled by check interrupt. |
+| [onInterrupt] | <code>Callback</code> | Optional callback to run after successful interrupt. Generally good practice to have continuing code encapsulated in this callback as interactions with a check interrupt callback can only continue through this. |
+| [onCancel] | <code>Callback</code> | Optional, for internal use only. To pass cancel function if attempting to start an interaction but canceled by check interrupt. |
 
 <a name="InteractionHandler+_cancelStartInteraction"></a>
-
-### interactionHandler.\_cancelStartInteraction(type)
-Cancel start interaction. Usually needed to "undo" interface changes that triggered by trying to start it.
-
-**Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| type | <code>string</code> | Interaction name. |
-
-<a name="InteractionHandler+addMapListener"></a>
 
 ### interactionHandler.addMapListener(type)
 Add/initialize a map listener on defined event type.
@@ -254,22 +212,32 @@ Temporarily disabled all map interactions.
 ### interactionHandler.enableMapInteractions()
 Renabled all map interactions.
 
+**Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
+<a name="InteractionHandler+bindUiElements"></a>
+
 ### interactionHandler.bindUiElements(elems, options)
-Bind given elements to interaction handling. TODO(?) Add detach function for hanging event listeners? Not currently needed but..
+Bind given elements to interaction handling.
+
+**Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| elems | <code>NodeList</code> \| <code>Element</code> \| <code>jQuery</code> |  | Element or elements (accepts either single, NodeList, or jQuery         selection) |
+| elems | <code>NodeList</code> \| <code>Element</code> \| <code>jQuery</code> |  | Element or elements (accepts either single, NodeList, or jQuery selection) |
 | options | <code>Object</code> |  | Optional options to apply to handling. |
-| [options.event] | <code>string</code> | <code>&quot;\&quot;click\&quot;&quot;</code> | The event type to attach the listener on. |
-| [options.valueFunction] | <code>string</code> \| [<code>uiValueFunction</code>](#uiValueFunction) |  | How to determine what type of interaction to         start. May be a constant value, or it may be a callback function, which will be called in the         context of, and with as the only parameter, the element triggered. |
+| [options.event] | <code>string</code> | <code>"click"</code> | The event type to attach the listener on. |
+| [options.value] | <code>string</code> \| [<code>UIValueFunction</code>](#UIValueFunction) |  | How to determine what type of interaction to start. May be a constant value, or it may be a callback function, which will be called in the context of, and with as the only parameter, the element triggered. If not supplied, attempts to return the `value` of the element. |
 | [options.always] | <code>Callback</code> |  | Optional callback to always run when event is triggered. Run before         managing any interactions tied to event. |
 | [options.interruptOnly] | <code>boolean</code> |  | If true, only interrupts active interactions, does not start any        interaction. E.g. a cancel button. |
 | [options.onInterrupt] | <code>Callback</code> |  | If interruptor only type, optional callback to run any time this         is activated (whether there is an active interaction to get interrupted or not). |
 
+
+<a name="Callback-Definitions"></a>
+
+## Callback Definitions
+
 <a name="interactionStart"></a>
 
-## interactionStart : <code>function</code>
+### interactionStart
 Callback on starting interaction. Always called when the interaction is started.
 
 | Param | Type | Description |
@@ -278,7 +246,7 @@ Callback on starting interaction. Always called when the interaction is started.
 
 <a name="interactionEnd"></a>
 
-## interactionEnd ⇒ <code>Object</code>
+### interactionEnd ⇒ <code>Object</code>
 Callback on ending interaction. Endings may be divided as ending normally or cancelled using the `cancel` parameter. Interruptions are passed as an ending interaction event with cancel parameter as true.
 
 **Returns**: <code>Object</code> - May optionally return any object, which will get passed to 
@@ -287,13 +255,12 @@ Callback on ending interaction. Endings may be divided as ending normally or can
 | Param | Type | Description |
 | --- | --- | --- |
 | event | <code>Event</code> | Event object, which may be null. |
-| cancel | <code>boolean</code> | A parameter denoting a cancel action to the interaction end. May be called         manually but also automatically triggered when interaction is interrupted or removed while active. |
+| cancel | <code>boolean</code> | A parameter denoting a cancel action to the interaction end. May be called manually but also automatically triggered when interaction is interrupted or removed while active. |
 
 <a name="interactionRestart"></a>
 
-## interactionRestart ⇒ <code>boolean</code>
-Callback on restarting interaction. Called when the interaction is started but was already the active 
-interaction.
+### interactionRestart ⇒ <code>boolean</code>
+Callback on restarting interaction. Called when the interaction is started but was already the active interaction.
 
 **Returns**: <code>boolean</code> - Return false to cancel calling this interaction's [#startInteraction](#startInteraction) callback.  
 
@@ -303,32 +270,27 @@ interaction.
 
 <a name="interactionCancelStart"></a>
 
-## interactionCancelStart : <code>function</code>
-If attempting to start this interaction, but could not interrupt the currently active interaction (as it 
-has a confirm interrupt function that was not confirmed), use this callback to undo changes that have 
-already happened. E.g. UI changes that were triggered on the click before the start interaction process 
-was triggered.
+### interactionCancelStart
+If attempting to start this interaction, but could not interrupt the currently active interaction (as it has a confirm interrupt function that was not confirmed), use this callback to undo changes that have already happened. E.g. UI changes that were triggered on the click before the start interaction process was triggered.
 
 <a name="interactionClear"></a>
 
-## interactionClear : <code>function</code>
-Callback triggered on end interaction but separated as depending on case they made be called independently 
-(via [clearInteraction](#InteractionHandler+clearInteraction)()) or not called during end as needed.
+### interactionClear
+Callback triggered on end interaction but separated as depending on case they made be called independently (via [clearInteraction](#InteractionHandler+clearInteraction)()) or not called during end as needed.
 
 <a name="interactionInterrupt"></a>
 
-## interactionInterrupt : <code>function</code>
-Callback triggered when this interaction is interrupted. Determines whether to confirm interruption, using 
-pass callback to continue interruption callback (which may be ignored if canceling interruption).
+### interactionInterrupt
+Callback triggered when this interaction is interrupted. Determines whether to confirm interruption, using pass callback to continue interruption callback (which may be ignored if canceling interruption).
 
 | Param | Type | Description |
 | --- | --- | --- |
-| interrupt | <code>callback</code> | If interruption is confirmed, call this parameter to continue interrupt         process. Otherwise, interruption is canceled. |
-| cancel | <code>callback</code> | If interruption is canceled, call this parameter to undo certain UI changes that        may have happened before start interaction that need to be reversed. |
+| interrupt | <code>callback</code> | If interruption is confirmed, call this parameter to continue interrupt process. Otherwise, interruption is canceled. |
+| cancel | <code>callback</code> | If interruption is canceled, call this parameter to undo certain UI changes that may have happened before start interaction that need to be reversed. |
 
 <a name="interactionMap"></a>
 
-## interactionMap : <code>function</code>
+### interactionMap
 Callback triggered on map interaction.
 
 | Param | Type | Description |
@@ -337,11 +299,10 @@ Callback triggered on map interaction.
 
 <a name="onInteractionStart"></a>
 
-## onInteractionStart ⇒ <code>boolean</code>
+### onInteractionStart ⇒ <code>boolean</code>
 Callback on starting any interaction.
 
-**Returns**: <code>boolean</code> - Return false to cancel starting interaction. Strict check, so must be exactly false, not
-         just evaluates to false.  
+**Returns**: <code>boolean</code> - Return false to cancel starting interaction. Strict check, so must be exactly false, not just evaluates to false.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -350,36 +311,34 @@ Callback on starting any interaction.
 
 <a name="onInteractionEnd"></a>
 
-## onInteractionEnd : <code>function</code>
+### onInteractionEnd 
 Callback after ending any interaction.
 
 | Param | Type | Description |
 | --- | --- | --- |
 | event | <code>Event</code> | Event object, which may be null. |
 | type | <code>string</code> | Unique name of interaction to be activated. |
-| cancel | <code>boolean</code> | A parameter denoting a cancel action to the interaction end. May be called         manually but also automatically triggered when interaction is interrupted or removed while active. |
+| cancel | <code>boolean</code> | A parameter denoting a cancel action to the interaction end. May be called manually but also automatically triggered when interaction is interrupted or removed while active. |
 
-<a name="onInteractionClear."></a>
+<a name="onInteractionClear"></a>
 
-## onInteractionClear. : <code>function</code>
+### onInteractionClear
 Callback on clearing any interaction.
 
-<a name="onInteractionUpdate."></a>
+<a name="onInteractionUpdate"></a>
 
-## onInteractionUpdate. : <code>function</code>
-Callback after finishing end interaction to trigger any following updates as needed. As such, passed 
-parameters that may be returned by the interaction end callback 
-([interactionEndInteractionHandler#](interactionEndInteractionHandler#)).
+### onInteractionUpdate
+Callback after finishing end-interaction to trigger any following updates as needed. As such, passed parameters that may be returned by the interaction end callback ([interactionEnd](#interactionEnd)).
 
 | Param | Type | Description |
 | --- | --- | --- |
 | endedInteractionName | <code>string</code> | Name of the interaction that was just ended. |
-| endObj | <code>Object</code> | Passed object of various data, if created via         [interactionEndInteractionHandler#](interactionEndInteractionHandler#) callback. |
-| errorMsg | <code>string</code> | Error message, if triggered during [interactionEndInteractionHandler#](interactionEndInteractionHandler#)         callback. |
+| endObj | <code>Object</code> | Passed object of various data, if created via [interactionEnd](#interactionEnd) callback. |
+| errorMsg | <code>string</code> | Error message, if triggered during [interactionEnd](#interactionEnd) callback. |
 
-<a name="uiValueFunction"></a>
+<a name="UIValueFunction"></a>
 
-## uiValueFunction ⇒ <code>string</code>
+### UIValueFunction ⇒ <code>string</code>
 Callback for returning a value denoting the interaction type bound to this UI element. Called within 
 context such that `this` is the element on which the event was triggered.
 
