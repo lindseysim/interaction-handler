@@ -1,6 +1,6 @@
 # Interaction Handler #
 
-2019 -- Lawrence Sim
+Lawrence Sim © 2019
 
 ----------
 

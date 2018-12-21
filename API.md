@@ -7,6 +7,9 @@ Interactions are started via [startInteraction](#InteractionHandler+startInterac
 
 * [InteractionHandler](#InteractionHandler)
     * [new InteractionHandler(olMap)](#new_InteractionHandler_new)
+    * [.isActive()](#InteractionHandler+isActive)
+    * [.activeInteraction()](#InteractionHandler+activeInteraction)
+    * [.get(name)](#InteractionHandler+get)
     * [.addInteraction(name, interaction)](#InteractionHandler+addInteraction)
     * [.removeInteraction(name)](#InteractionHandler+removeInteraction)
     * [.onInteractionStart(callback)](#InteractionHandler+onInteractionStart)
@@ -48,17 +51,45 @@ Constructor.
 | --- | --- | --- |
 | olMap | <code>ol.Map</code> | OpenLayers map instance. |
 
+<a name="InteractionHandler+isActive"></a>
+
+### interactionHandler.isActive()
+Check if an interaction is currently active.
+
+**Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
+**Returns**: <code>boolean</code> - Whether there is an active interaction.  
+
+<a name="InteractionHandler+activeInteraction"></a>
+
+### interactionHandler.activeInteraction()
+Get the name of the active interaction.
+
+**Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
+**Returns**: <code>string</code> - Name of the active interaction, or <code>null</code>
+
+<a name="InteractionHandler+get"></a>
+
+### interactionHandler.get(name) ⇒ <code>Object</code>
+Get the an interaction definition by name.
+
+**Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
+**Returns**: <code>Object</code> - Name of the active interaction, or <code>null</code>
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>string</code> | Unique name for interaction to return. |
+
 <a name="InteractionHandler+addInteraction"></a>
 
 ### interactionHandler.addInteraction(name, interaction) ⇒ <code>Object</code>
 Add an interaction.
 
 **Kind**: instance method of [<code>InteractionHandler</code>](#InteractionHandler)  
-**Returns**: <code>Object</code> - The interaction replaced or null not replacing anything.  
+**Returns**: <code>Object</code> - The interaction replaced or <code>null</code> not replacing anything.  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>string</code> | Unique name for this interaciton. |
+| name | <code>string</code> | Unique name for this interaction. |
 | interaction | <code>Object</code> | Interaction parameters. |
 | interaction.start | [<code>interactionStart</code>](#interactionStart) | Callback on starting interaction. |
 | interaction.end | [<code>interactionEnd</code>](#interactionEnd) | Callback on ending the interaction. |
@@ -79,7 +110,7 @@ Remove an interaction. If interaction is currently active, interaction is interr
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>string</code> | Unique name for this interaciton. |
+| name | <code>string</code> | Unique name for this interaction. |
 
 <a name="InteractionHandler+onInteractionStart"></a>
 

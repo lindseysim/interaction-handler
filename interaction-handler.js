@@ -24,6 +24,11 @@ InteractionHandler.prototype.activeInteraction = function() {
     return this._activeInteraction;
 };
 
+InteractionHandler.prototype.get = function(name) {
+    if(name in this._interactions) return this._interactions[name];
+    return null;
+};
+
 //************************************************************************************************************
 // Adding/removing specific interactions.
 //************************************************************************************************************
