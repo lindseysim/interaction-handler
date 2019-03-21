@@ -115,6 +115,7 @@ InteractionHandler.prototype.startInteraction = function(type, evt) {
             this._activeInteraction = null;
             return;
         }
+        if(!this._activeInteraction) return;  // if immediately ended at start
         if(!restartInteraction && this._interactions[this._activeInteraction].olInteraction) {
             this.olMap.addInteraction(this._interactions[this._activeInteraction].olInteraction);
         }

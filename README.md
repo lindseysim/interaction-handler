@@ -29,7 +29,7 @@ There are more complicated routes as we get into ending versus canceling, restar
 
 ### Defining an interaction ###
 
-Interactions are defined primarily through callbacks. Thus. For greater detail see the [API](API.md), but the below gives a rough outline on defining an interaction.
+Interactions are defined primarily through callbacks. For greater detail see the [API](API.md), but the below gives a rough outline on defining an interaction.
 
 ##### `InteractionHandler.prototype.addInteraction(name, interaction)` #####
 
@@ -80,7 +80,7 @@ How the above callback parameters are used when starting a new interaction, is s
 
 In this example, we're adding OpenLayers map-measure interactions, which handle the actual interactions themselves. One for measuring by distance by line, other for measuring area by polygon. 
 
-First create the interactions in the handlers. Because the interactions are quite similar, we will share the same routes. However, the interactions themselves are unique, so added separately with different names.
+First create the interactions in the handlers. Because the interactions are quite similar, we will share the same routes (using an `geom` attribute that will be added to the buttons to differentiate measure type). However, the interactions themselves are unique so they are added separately to the interaction handler with unique names.
 
 ```javascript
 var olInteraction = null, 
@@ -130,7 +130,7 @@ function endMeasure(evt, cancel) {
 }
 ```
 
-Now the UI elements..
+The UI elements..
 
 ```html
 <button class="ui-measure" geom="line">Measure Distance</button>
@@ -138,7 +138,7 @@ Now the UI elements..
 <button class="ui-measure-cancel">Cancel</button>
 ```
 
-..are bound to `click` events. The name of the interaction they start are given by the `value` option. The cancel button, meanwhile, is set to only interrupt any active events, without starting any interaction of its own.
+..are bound to `click` events via [`bindUiElements(elems, options)`](API.md#InteractionHandler+bindUiElements). The name of the interaction they start are given by the `options.value`. The cancel button, meanwhile, is set to only interrupt any active events, without starting any interaction of its own.
 
 ```javascript
 interactionHandler.bindUiElements(
@@ -156,7 +156,7 @@ interactionHandler.bindUiElements(
 );
 ```
 
-Note you do not necessarily have to use `bindUiElements()`, you can manually bind events as you like to `startInteraction()` and `endInteraction()`.
+Note you do not necessarily have to use [`bindUiElements()`](API.md#InteractionHandler+bindUiElements), you can manually bind events as you like to [`startInteraction()`](API.md#InteractionHandler+startInteraction) and [`endInteraction()`](API.md#InteractionHandler+endInteraction).
 
 ##### Restarting interactions and canceling on reclick #####
 
@@ -190,7 +190,7 @@ interactionHandler.onInteractionStart(function(evt, type) {
 
 As written above, interrupting/canceling the measure interaction will simply end the interaction without computing the distance or area measured. Perhaps we want to have the user prompted whether to confirm cancellation when such an event occurs.
 
-If so, in the interaction options, we can adjust the interaction options like so, linking in to a confirm interruption function.
+If so, in the interaction options, we can define a callback for `checkInterrupt`.
 
 ```javascript
 var iOptions = {
@@ -228,13 +228,13 @@ function confirmInterrupt(interrupt, cancel) {
 
 ##### End interaction vs. interrupt #####
 
-Ending an interaction simply ends the interaction. Interrupting the interaction attempts to end the interaction, but may be rejected, depending on whether a `checkInterrupt` callback exists for the interaction and is therein canceled. However, if confirmed, interrupt will eventually route to `endInteraction()`. Additionally, the default state of an `endInteraction()` call is that it is not a 'cancel' event. An interaction ended through `interrupt()` sets the `cancel` parameter to `true`.
+Ending an interaction simply ends the interaction. Interrupting the interaction attempts to end the interaction but may be rejected depending on whether a `checkInterrupt` callback exists for the interaction and is therein canceled. However, if confirmed, interrupt will eventually route to `endInteraction()`. Additionally, the default state of an `endInteraction()` call is that it is not a 'cancel' event. An interaction ended through `interrupt()` sets the `cancel` parameter to `true`.
 
 ##### Default listeners #####
 
 Default listeners that are always triggered on starting or ending an interaction can be applied through `onInteractionStart()` and `onInteractionEnd()`. 
 
-The default start interaction event listener is called immediately before starting the interaction itself (that is, before the interaction specific `interactionStart` callback), and may return `false` to cancel the interaction start. The default end interaction event listener is called after ending the interaction.
+The default start interaction event listener is called immediately before starting the interaction itself (that is, before the interaction specific `interactionStart` callback) and may return `false` to cancel the interaction start. The default end interaction event listener is called after ending the interaction.
 
 Additionally, there you may add default event listeners to clear and update events with `onClear()` and `onUpdate()`. 
 
@@ -244,7 +244,7 @@ The *on-update* listener is called last and is unique in that it gets passed the
 
 ##### Error handling #####
 
-All user supplied callbacks are wrapped in a try-catch block within the `interactionStart()` and `interactionEnd()` methods. Generally speaking, if an exception occurs during `interactionStart()`, the interaction is assumed to have failed to start and still inactive. If an exception occurs during `interactionEnd()`, the process continues until it has cleared the interaction and is assumed inactive. Obviously though, do not assume exceptions will be handled cleanly and rely on this.
+All user supplied callbacks are wrapped in a try-catch block within the `interactionStart()` and `interactionEnd()` methods. Generally speaking, if an exception occurs during `interactionStart()`, the interaction is assumed to have failed to start and still inactive. If an exception occurs during `interactionEnd()`, the process continues until it has cleared the interaction and is assumed inactive. Obviously though, do not assume exceptions will be handled cleanly and rely solely on this.
 
 ##### OpenLayers map listeners #####
 
