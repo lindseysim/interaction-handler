@@ -148,7 +148,7 @@ class InteractionHandler {
         if(!this._activeInteraction) return;
         var error = null, 
             endObj = null;
-        // end interaciton callback
+        // end interaction callback
         try {
             endObj = this._interactions[this._activeInteraction].end(evt, cancel);
         } catch(e) {

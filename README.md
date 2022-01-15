@@ -1,19 +1,18 @@
-# Interaction Handler #
+# Interaction Handler
 
-Lawrence Sim © 2019
+Lawrence Sim © 2022
 
 ----------
 
+### The problem
 
-### The problem ###
+In a highly interactive application, there soon becomes many interaction types defined. Some of these interactions are instantaneous -- such as a simple button press -- but some of which are persistent until an action ends it -- such as drawing or editing something. Interactions can further have complex processes on starting/ending (such as saving the edits when finished). This is complicated by the fact that the user may try to start another interaction while one is currently ongoing. The current interaction must be ended, but is it ended gracefully or interrupted? Does it first have a prompt asking the user if they're sure to cancel said interaction? Suddenly, you're writing boilerplate for making sure every interaction interrupts the other correctly and event listeners start to become convoluted.
 
-In a highly interactive application, there soon becomes many interaction types defined. Some of these interactions are instantaneous (e.g. a simple button press), but some of which are persistent until an action ends it (e.g. drawing or editing something). Interactions can have complex processes on starting/ending (such as saving the edits). This is complicated by the fact that the user may try to start another interaction while one is currently ongoing. The current interaction must be ended, but is it ended gracefully or interrupted? Does it first have a prompt asking the user if they're sure to cancel said interaction? Suddenly, you're writing boilerplate for making sure every interaction interrupts the other correctly and event listeners start to become convoluted.
+### The idea
 
-### The idea ###
+The current active interaction becomes a state, which `InteractionHandler` manages. Aside from ability to handle listeners on an OpenLayers map instance (optional), it does not actually process the interactions themselves, it only manages them. However all interactions must be started and ended through the handler.
 
-"Interaction" itself becomes a state, which **Interaction Handler** manages. Aside from ability to handle listeners on an OpenLayers map instance (optional), it does not actually process the interactions themselves, it only manages them. However all interactions must be started and ended through the handler.
-
-### Interaction lifecycle ###
+### Interaction lifecycle
 
 At the simplest, an interaction starts and eventually ends. The interaction may be instantaneous, in which it runs a process and ends immediately when said process is finished. Or an interaction may be persistent and is active until another action ends it.
 
@@ -23,74 +22,52 @@ There are more complicated routes as we get into ending versus canceling, restar
 
 ----------
 
-### [API Documentation](API.md) ###
+### [API Documentation](API.md)
 
 ----------
 
-### Defining an interaction ###
+### Defining an interaction
 
 Interactions are defined primarily through callbacks. For greater detail see the [API](API.md), but the below gives a rough outline on defining an interaction.
 
-##### `InteractionHandler.prototype.addInteraction(name, interaction)` #####
+##### `InteractionHandler.prototype.addInteraction(name, interaction)`
 
-<table>
-  <tbody>
-    <tr>
-      <th>Parameter</th><th>Description</th>
-    </tr>
-    <tr>
-      <td>name</td><td>Unique name-key for the interaction.</td>
-    </tr>
-    <tr>
-      <td>interaction.start</td><td>Callback on starting this interaction. Provided <code>event</code> parameter.</td>
-    </tr>
-    <tr>
-      <td>interaction.end</td><td>Callback on ending this interaction. Provided <code>event</code>, and <code>cancel</code> parameters.</td>
-    </tr>
-    <tr>
-      <td>interaction.restart</td><td><i>Optional.</i> Callback if restarting this interaction (that is, interaction start was called when it was already active). Provided <code>evt</code> parameter. If calling start twice without the end callback may cause issues, return <code>false</code> to skip retriggering <code>interaction.start</code> (while still keeping this interaction active).</td>
-    </tr>
-    <tr>
-      <td>interaction.cancelStart</td><td><i>Optional.</i> Callback if attempt to start this interaction was canceled as the interruption of the currently active interaction was blocked. Provided <code>type</code> parameter.</td>
-    </tr>
-    <tr>
-      <td>interaction.clear</td><td><i>Optional.</i> Callback on clearing an interaction, which is done when interaction is ended. Generally unnecessary but may have special use cases.</td>
-    </tr>
-    <tr>
-      <td>interaction.checkInterrupt</td><td><i>Optional.</i> If supplied, callback to confirm interruption, when this interruption is active and another attempts to interrupt it. Provided callbacks of <code>interrupt</code> and <code>cancel</code> as parameters. One, and only one, of the provided callbacks must be called depending on confirming  or canceling the interruption.</td>
-    </tr>
-    <tr>
-      <td>interaction.map</td><td><i>Optional.</i> Key-value map of event names and callbacks to apply to the OpenLayers map when this interaction is active.</td>
-    </tr>
-    <tr>
-      <td>interaction.saveOnInterrupt</td><td><i>Optional.</i> If true, interruptions are provided the <code>cancel</code> parameter as false -- that is, treating interruptions as if a normal end interaction event.</td>
-    </tr>
-  </tbody>
-</table>
+| Param | Description |
+| --- | --- |
+| name | Unique name for this interaction. |
+| interaction | Interaction parameters. |
+| interaction.start | Hook on starting interaction. |
+| interaction.end | Hook on ending the interaction. |
+| [interaction.restart] | Optional hook on restarting the interaction (that is, interaction start was called when it was already active). |
+| [interaction.cancelStart] | Optional hook called when canceling start interaction (e.g. when start was attempted but blocked). |
+| [interaction.clear] | Optional hook called on clearing an interaction, which is done when interaction is ended. Generally unnecessary but may have special use cases. |
+| [interaction.checkInterrupt] | Optional interrupt checking function. If supplied, hook called to confirm interruption, when this interruption is active and another attempts to interrupt it. |
+| [interaction.map] | Optional object of listener callbacks on the `olMap` with key being the event name and value being value being callback on that event. Map event listening must first be enabled via [addMapListener](#InteractionHandler+addMapListener)(). |
+| interaction.olInteraction | Optional OpenLayers map interaction to bind with this interaction. |
+| [interaction.saveOnInterrupt] | Special case, if true, to save changes even if interrupted. That is, treat any interruption as a normal end interaction. |
 
-##### Flowchart on starting and interaction #####
+##### Flowchart on starting and interaction
 
-How the above callback parameters are used when starting a new interaction, is shown below.
+How the above hooks are called/used when starting a new interaction is shown below.
 
 ![](images/lifecycle.png)
 
 ----------
 
-### Simple use case ###
+### Simple use case
 
-In this example, we're adding OpenLayers map-measure interactions, which handle the actual interactions themselves. One for measuring by distance by line, other for measuring area by polygon. 
+In this example, we're want to add measurement tools for both distance and area. For these, we will use OpenLayers' built in draw interaction handler, but then wrap everything under the interaction handler. The UI elements we'll assume are defined somewhere in the webpage as follows, each of which will start a unique interaction type (plus one button to cancel).
 
-First create the interactions in the handlers. Because the interactions are quite similar, we will share the same routes (using an `geom` attribute that will be added to the buttons to differentiate measure type). However, the interactions themselves are unique so they are added separately to the interaction handler with unique names.
+```html
+<button class="ui-measure" geom="line" for="measure-line">Measure Distance</button>
+<button class="ui-measure" geom="poly" for="measure-poly">Measure Area</button>
+<button class="ui-measure-cancel">Cancel</button>
+```
+
+First let's defined the callbacks for the start/end hooks which apply and remove these OpenLayers interactions to the map, and if ending, alert the length/area measurement.
 
 ```javascript
-var olInteraction = null, 
-    iOptions = {
-        start: startMeasure, 
-        end: endMeasure, 
-        saveOnInterrupt: false
-    };
-interactionHandler.addInteraction("measure-line", iOptions);
-interactionHandler.addInteraction("measure-poly", iOptions);
+var olInteraction;  // store the active OpenLayer interaction here so we can remove it
 
 function startMeasure(evt) {
     var geomType = evt ? evt.currentTarget.getAttribute("geom") : null;
@@ -100,7 +77,8 @@ function startMeasure(evt) {
         geomType = "Polygon";
     } else {
         // if no recognized geometry type, end interaction
-        return interactionHandler.endInteraction(null, true);
+        interactionHandler.endInteraction(null, true);
+        return;
     }
     olInteraction = new ol.interaction.Draw({
         source: measureLayerSource, 
@@ -114,6 +92,7 @@ function startMeasure(evt) {
     olMap.addInteraction(olInteraction);
 }
 
+// evt will be a special OpenLayers event, which has the feature property
 function endMeasure(evt, cancel) {
     if(olInteraction) {
         olMap.removeInteraction(olInteraction);
@@ -130,15 +109,30 @@ function endMeasure(evt, cancel) {
 }
 ```
 
-The UI elements..
+While we can share the hooks as they're written generically, the interactions themselves (for line and polygon measurements) are unique so they are added separately to the interaction handler with unique names.
 
-```html
-<button class="ui-measure" geom="line">Measure Distance</button>
-<button class="ui-measure" geom="poly">Measure Area</button>
-<button class="ui-measure-cancel">Cancel</button>
+```javascript
+var interactionHandler = new InteractionHandler();
+
+interactionHandler.addInteraction(
+    "measure-line", 
+    {
+        start: startMeasure, 
+        end: endMeasure, 
+        saveOnInterrupt: false
+    }
+);
+interactionHandler.addInteraction(
+    "measure-poly", 
+    {
+        start: startMeasure, 
+        end: endMeasure, 
+        saveOnInterrupt: false
+    }
+);
 ```
 
-..are bound to `click` events via [`bindUiElements(elems, options)`](API.md#InteractionHandler+bindUiElements). The name of the interaction they start are given by the `options.value`. The cancel button, meanwhile, is set to only interrupt any active events, without starting any interaction of its own.
+Going back to the HTML buttons, we will bind the `click` listeners via [`bindUiElements(elems, options)`](API.md#InteractionHandler+bindUiElements). The name of the interaction they start are given by the attribute, which we pull on clicking with the `value` callback to get the interaction name. The cancel button, meanwhile, is set to only interrupt any active events, without starting any interaction of its own.
 
 ```javascript
 interactionHandler.bindUiElements(
@@ -146,7 +140,7 @@ interactionHandler.bindUiElements(
     {
         event: 'click', 
         value: function() {
-            return "measure-"+this.getAttribute("geom");
+            return this.getAttribute("for");
         }
     }
 );
@@ -156,51 +150,45 @@ interactionHandler.bindUiElements(
 );
 ```
 
-Note you do not necessarily have to use [`bindUiElements()`](API.md#InteractionHandler+bindUiElements), you can manually bind events as you like to [`startInteraction()`](API.md#InteractionHandler+startInteraction) and [`endInteraction()`](API.md#InteractionHandler+endInteraction).
+Note you do not necessarily have to use [`bindUiElements()`](API.md#InteractionHandler+bindUiElements), you can manually bind events as you like to [`startInteraction()`](API.md#InteractionHandler+startInteraction) and [`endInteraction()`](API.md#InteractionHandler+endInteraction). This just makes a quick shortcut.
 
-##### Restarting interactions and canceling on reclick #####
+##### Restarting interactions and canceling on reclick
 
 If clicking, say, the measure line button to activate it, then clicking it again, we actually restarted the interaction. This actually causes `startMeasure` to be called twice, without calling `endMeasure`, which is erroneous and will double up adding `ol.interaction.Draw` to the map.
 
-To counter this, you may add code to enable and disable the buttons. But we may also want to add a programmatic check. In the simplest case, we can add a restart callback that returns false, thus halting retriggering the start interaction callback while still keeping the interaction active.
+To counter this, you may add code to enable and disable the buttons. But we may also want to add a programmatic check. In the simplest case, we can add a restart callback that returns `false`, thus halting retriggering the start interaction callback while still keeping the interaction active.
 
 ```javascript
-var iOptions = {
+// and same with 'measure-poly'
+interactionHandler.addInteraction(
+    "measure-line", 
+    {
         start: startMeasure, 
         end: endMeasure, 
         restart: function() { return false; }, 
         checkInterrupt: confirmInterrupt, 
         saveOnInterrupt: false
-    };
-```
-
-Alternatively, you may want it such that clicking on the button when it's already active actually ends it (via interruption).
-
-```javascript
-interactionHandler.onInteractionStart(function(evt, type) {
-    // note startsWith() requires polyfill in IE
-    if(type.startsWith("measure") && this.activeInteraction === type) {
-        this.interrupt();
-        return false;
     }
-});
+);
 ```
 
-##### Prompt to confirm interruption #####
-
-As written above, interrupting/canceling the measure interaction will simply end the interaction without computing the distance or area measured. Perhaps we want to have the user prompted whether to confirm cancellation when such an event occurs.
-
-If so, in the interaction options, we can define a callback for `checkInterrupt`.
+Alternatively, you may want it such that clicking on the button when it's already active actually ends it (via interruption). We can do this by setting the generic interaction start hook.
 
 ```javascript
-var iOptions = {
-        start: startMeasure, 
-        end: endMeasure, 
-        restart: function() { return false; }, 
-        checkInterrupt: confirmInterrupt, 
-        saveOnInterrupt: false
-    };
+interactionHandler.onInteractionStart = function(evt, name) {
+    if(this.activeInteraction === name) {
+        this.interrupt();  // call interruption
+        return false;      // return false to not continue starting this interaction
+    }
+};
+```
 
+##### Prompt to confirm interruption
+
+As written above, interrupting/canceling the measure interaction will simply end the interaction without computing the distance or area measured. Perhaps we want to have the user prompted whether to confirm cancellation when such an event occurs. If so, in the interaction options, we can define a callback for `checkInterrupt`.
+
+```javascript
+// will be passed two callbacks to choose how to continue
 function confirmInterrupt(interrupt, cancel) {
     var modal = document.querySelector("#modal");
     modal.innerHTML = (
@@ -220,17 +208,29 @@ function confirmInterrupt(interrupt, cancel) {
     });
     modal.style.display = "block";
 }
+
+// and same with 'measure-poly'
+interactionHandler.addInteraction(
+    "measure-line", 
+    {
+        start: startMeasure, 
+        end: endMeasure, 
+        restart: function() { return false; }, 
+        checkInterrupt: confirmInterrupt, 
+        saveOnInterrupt: false
+    }
+);
 ```
 
 ----------
 
-### More notes ###
+### More notes
 
-##### End interaction vs. interrupt #####
+##### End interaction vs. interrupt
 
 Ending an interaction simply ends the interaction. Interrupting the interaction attempts to end the interaction but may be rejected depending on whether a `checkInterrupt` callback exists for the interaction and is therein canceled. However, if confirmed, interrupt will eventually route to `endInteraction()`. Additionally, the default state of an `endInteraction()` call is that it is not a 'cancel' event. An interaction ended through `interrupt()` sets the `cancel` parameter to `true`.
 
-##### Default listeners #####
+##### Default listeners
 
 Default listeners that are always triggered on starting or ending an interaction can be applied through `onInteractionStart()` and `onInteractionEnd()`. 
 
@@ -242,14 +242,47 @@ The *on-clear* listener if called before the default end interaction listener, b
 
 The *on-update* listener is called last and is unique in that it gets passed the ended interaction name-key and, if it exists, any object returned by the interaction specific `interactionEnd` callback, or the exception if said callback errored.
 
-##### Error handling #####
+##### Error handling
 
 All user supplied callbacks are wrapped in a try-catch block within the `interactionStart()` and `interactionEnd()` methods. Generally speaking, if an exception occurs during `interactionStart()`, the interaction is assumed to have failed to start and still inactive. If an exception occurs during `interactionEnd()`, the process continues until it has cleared the interaction and is assumed inactive. Obviously though, do not assume exceptions will be handled cleanly and rely solely on this.
 
-##### OpenLayers map listeners #####
+##### OpenLayers map listeners
 
-OpenLayers is optional, and the handler will not break if an OpenLayers map is not supplied. However, it will obviously break if attempting to use the map listener functionality.
+For special map events that are handled internally in OpenLayers, like zoom or view changes, we can use the OpenLayers map supplied in the constructor and some special hooks and functions to handle these. 
 
 Map listening callback are optionally provided with each interaction via the `interaction.map` parameter. The map listener for each interaction will only work when said interaction is active. However, listeners are not applied to the map itself, and thus cannot be activated, until `addMapListener()` is called for the events specified. It is always safe to call `addMapListener()` again as it overwrites instead of adds. `addMapListener()` does not need to be called again for the same event type after adding a new interaction with map listeners, provided it was already applied. 
 
-Map listeners can be temporarily disabled and enabled via `disableMapInteraction()` and `enableMapInteraction()`. Note that on ending an interaction, map listeners are always reenabled, just in case.
+```javascript
+var interactionHandler = new InteractionHandler(olMap);
+
+interactionHandler.addInteraction(
+    'map-move-listening', 
+    {
+        start: function(evt) { /* nothing of interest */ }, 
+        end: function(evt, cancel) { /* nothing of interest */ }
+        map: {
+            movestart: function(evt) {
+                console.log("Map moving in progress.");
+            }, 
+            moveend: function(evt) {
+                console.log("Map view changed.");
+            }
+        }
+    }
+);
+
+// need to activate the map listeners on the events we are using
+interactionHandler.addEventListener('movestart');
+interactionHandler.addEventListener('moveend');
+
+interactionHandler.startInteraction('map-move-listening');
+/* 
+ * during here, the console log statements will be happening during map moves
+ */
+interactionHandler.endInteraction()
+
+```
+
+Map listeners can also be temporarily disabled and enabled via `disableMapInteraction()` and `enableMapInteraction()` without ending or otherwise affecting the currently active interaction.
+
+The OpenLayers map being passed is optional, and the handler will not break if an OpenLayers map is not supplied. However, it will obviously break if attempting to use the map listener functionality. Additionally, the only functions called in the OpenLayers map object are `on(type, listener)` and `un(type, listener)`, so this can be replaced by anything that follows a similar interface.
