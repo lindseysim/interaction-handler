@@ -7,11 +7,12 @@ module.exports = {
     output: {
         library: {
             name:   'InteractionHandler', 
-            type:   'this', 
+            type:   'umd', 
             export: 'default'
         }, 
-        path: path.resolve(__dirname), 
-        filename: 'interaction-handler.min.js'
+        globalObject: 'this', 
+        path:         path.resolve(__dirname), 
+        filename:     'interaction-handler.min.js'
     },
     module: {
         rules: [
