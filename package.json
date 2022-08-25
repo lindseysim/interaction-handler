@@ -1,6 +1,6 @@
 {
   "name": "@lawrencesim/interaction-handler",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Lawrence Sim",
   "license": "MIT",
   "main": "interaction-handler.min.js",
@@ -13,10 +13,10 @@
     "build": "webpack --config webpack.config.js"
   },
   "devDependencies": {
-    "@babel/core": "^7.16.7",
-    "@babel/preset-env": "^7.16.8",
-    "babel-loader": "^8.2.3",
-    "webpack": "^5.66.0",
-    "webpack-cli": "^4.9.1"
+    "@babel/core": "^7.18.13",
+    "@babel/preset-env": "^7.18.10",
+    "babel-loader": "^8.2.5",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0"
   }
 }

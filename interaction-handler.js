@@ -34,7 +34,7 @@ class InteractionHandler {
     }
 
     get(name) {
-        return name in this._interactions ? this._interactions[name] : null;
+        return (name in this._interactions) && this._interactions[name] || null;
     }
 
     //********************************************************************************************************
@@ -126,9 +126,12 @@ class InteractionHandler {
             this._activeInteraction = type;
             try {
                 if(
-                    !restartInteraction ||
-                    !this._interactions[this._activeInteraction].restart ||
-                    this._interactions[this._activeInteraction].restart(evt) !== false
+                    !restartInteraction
+                    || this._interactions[this._activeInteraction].restart === true
+                    || (
+                        typeof this._interactions[this._activeInteraction].restart === "function" 
+                        && this._interactions[this._activeInteraction].restart(evt) !== false
+                    )
                 ) {
                     this._interactions[this._activeInteraction].start(evt);
                 }
@@ -284,14 +287,14 @@ class InteractionHandler {
             listener = null;
         // create listener by type
         if(!options.interruptOnly) {
-            listener = function(evt) {
+            listener = evt => {
                 if(options.always) options.always();
-                self._uiListener(this, options.value, evt);
+                this._uiListener(options.value, evt);
             };
         } else {
-            listener = function(evt) {
+            listener = evt => {
                 if(options.always) options.always();
-                self._uiInterruptorListener(this, options.onInterrupt, evt);
+                self._uiInterruptorListener( options.onInterrupt, evt);
             };
         }
         // add listener
@@ -299,7 +302,7 @@ class InteractionHandler {
     }
 
     _uiListener(elem, getValueFunction, evt) {
-        var value = typeof getValueFunction === "function" ? getValueFunction.call(elem, elem) : getValueFunction;
+        var value = typeof getValueFunction === "function" ? getValueFunction.call(elem, evt) : getValueFunction;
         if(this._activeInteraction && value === this._activeInteraction) {
             this.startInteraction(value, evt);
         } else {
